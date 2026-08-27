@@ -51,7 +51,7 @@ if [[ "$TYPE" == "docker" ]]; then
   if ! docker ps --format '{{.Ports}}' | grep -q "0.0.0.0:${PORT}->"; then
     echo "ERROR: No Docker container found listening on host port ${PORT}."
     echo "Start the service first:"
-    echo "  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
+    echo "  docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d"
     exit 1
   fi
   echo "  Docker container on :${PORT} — OK"

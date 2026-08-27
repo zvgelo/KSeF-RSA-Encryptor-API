@@ -3,6 +3,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const bridgeDir = path.dirname(fileURLToPath(import.meta.url));
 
+const ERROR_MARKER = '__KSEF_PDF_ERROR__';
+
 // Redirect console output to stderr so module debug messages don't pollute stdout JSON
 const _toStderr = (...args) => process.stderr.write(args.join(' ') + '\n');
 console.log = _toStderr;
@@ -74,6 +76,8 @@ async function main() {
 
 main().catch((error) => {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  process.stderr.write(errorMessage);
+  // Marker lets the Python side pick the real cause out of stderr, which also
+  // carries i18next debug output from the PDF module (upstream sets debug: true).
+  process.stderr.write(`\n${ERROR_MARKER}${errorMessage}\n`);
   process.exit(1);
 });

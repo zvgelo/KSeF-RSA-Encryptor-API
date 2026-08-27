@@ -1,0 +1,31 @@
+# Upstream PDF generator source clone — build tool only.
+# The built output is vendored in pdf-generator/dist and copied from there.
+ksef-pdf-generator/
+
+# VCS / IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+.mcp.json
+
+# Python runtime artifacts
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+pytest_cache/
+
+# Runtime data — must never be baked into the image
+instance/
+
+# Not needed at runtime.
+# NOTE: patterns are relative to the build context (the repository root),
+# not to this file's directory.
+tests/
+docs/
+*.md
+docker/
+setup-ssl.sh
+*.tar

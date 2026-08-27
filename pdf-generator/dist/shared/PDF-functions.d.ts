@@ -17,7 +17,13 @@ export declare function addThousandSeparator(value: string, thousandSeparator?: 
 export declare function createLabelText(label: string, value: FP | string | number | undefined | null, formatTyp?: FormatTyp | FormatTyp[], style?: Style): Content[];
 export declare function createSection(content: Content[], isLineOnTop: boolean, margin?: Margins): Content[];
 export declare function createHeader(text: string, margin?: Margins): Content[];
+export declare function createPefHeader(text: string): Content[];
+export declare function createPEFSubHeader(text: string): Content[];
 export declare function createSubHeader(text: string, margin?: Margins): Content[];
+export declare function createInlineLabelValue(value: string, label?: string | undefined, margin?: Margins): ContentText;
+export declare function createInlineValueLabel(value: string, label?: string | undefined, margin?: Margins): ContentText;
+export declare function createSmallInlineLabelValue(value: string, label?: string | undefined, formatTyp?: FormatTyp | FormatTyp[], margin?: Margins): ContentText;
+export declare function createPEFSectionTitle(value: string): ContentText;
 export declare function generateStyle(): Partial<TDocumentDefinitions>;
 export declare function getTable<T>(data: T | T[]): NonNullable<T>[];
 export declare function getRowTable(data: string[], formatColumn: FormatTyp | FormatTyp[]): Content[];
@@ -36,3 +42,10 @@ export declare function getTStawkaPodatku(code: string, version: 1 | 2 | 3 | 'RR
 export declare function generateLine(): Content;
 export declare function makeBreakable(value: string | number | undefined, wordBreak?: number): string | number | undefined;
 export declare function formatBankAccountNumber(number: string): string;
+export declare function createLabelWithBoldText(label: string, value: string | number, formatTyp?: FormatTyp | FormatTyp[]): Content[];
+export declare function borderedBox(contents: Content[]): Content;
+export declare function generateTaxRateLabel(ID?: string, percent?: string): string;
+export declare function formatPefTableValue(value: unknown): string;
+export declare function generatePefTable<T extends Record<string, unknown>>(rows: T[], headers: Record<keyof T, string>): Content;
+export declare function createPefTableHeader(text: string, additionalContent?: Content): Content;
+export declare function getTaxCategoryDescription(ID?: string): string;

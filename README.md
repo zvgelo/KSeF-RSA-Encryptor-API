@@ -30,7 +30,7 @@ python encrypt_service.py
 Or with Docker:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
 ```
 
 ---
@@ -43,6 +43,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - Invoice PDF generation via Node.js bridge (`/generatePDF`)
 - Secure CMS encrypted tunnel (`/consume`) with internal key management
 - SQLite key store with TTL-based expiry (WAL mode)
+- Optional TLS-terminating proxy container with reuse-or-generate certificate provisioning
 - Swagger UI (`/apidocs`), CORS support, Docker-ready
 
 ---

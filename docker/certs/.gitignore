@@ -1,0 +1,4 @@
+# Generated TLS material — never committed. ca.crt is the file to hand to
+# clients; collect it from this directory on the host.
+*
+!.gitignore

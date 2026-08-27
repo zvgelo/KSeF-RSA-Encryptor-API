@@ -18,6 +18,7 @@ export type FA3FakturaZaliczkowaData = FA3FakturaZaliczkowaDataSpozaKSeF | FA3Fa
 export type FA2FakturaZaliczkowaData = FA2FakturaZaliczkowaDataSpozaKSeF | FA2FakturaZaliczkowaDataZKSeF;
 export interface AdditionalDataTypes {
     nrKSeF: string;
+    acDate?: string;
     qrCode?: string;
     qr2Code?: string;
     isMobile?: boolean;

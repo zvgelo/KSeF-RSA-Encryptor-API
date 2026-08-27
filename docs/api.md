@@ -11,7 +11,7 @@ Returns service metadata and available endpoints.
 **Response:**
 ```json
 {
-  "service": "KSeF Integration API 1.3.1",
+  "service": "KSeF Integration API 1.3.2",
   "docs": "/apidocs",
   "health": "/health",
   "generate_pdf": "/generatePDF"
@@ -29,7 +29,7 @@ Health check for monitoring and container probes.
 {
   "status": "ok",
   "service": "KSeF Integration API",
-  "version": "1.3.1"
+  "version": "1.3.2"
 }
 ```
 
@@ -103,6 +103,13 @@ Signs a KSeF offline QR verification link.
 `alg`: `rsa_pss` (default) or `ecdsa_p256`  
 `ecdsa_format`: `p1363` (default, R||S 64 bytes) or `der`
 
+The private key password may be given either way:
+
+| Field | Description |
+|---|---|
+| `key_password_b64` | Password as Base64(UTF-8). Takes precedence when both are present |
+| `key_password` | Password as plain UTF-8 text. **Accepted only by this endpoint** — `/sign_xml` takes `key_password_b64` exclusively |
+
 **Response:**
 ```json
 {
@@ -125,6 +132,7 @@ Renders an invoice PDF from XML using the Node.js bridge.
   "response_type": "base64",
   "additional_data": {
     "nr_ksef": "20260101-1234567890-ABCDEF1234567890",
+    "ac_date": "2026-01-01T12:00:00Z",
     "qr_code": "https://...",
     "qr2_code": "https://...",
     "is_mobile": false,
@@ -139,13 +147,14 @@ Renders an invoice PDF from XML using the Node.js bridge.
 | `xml_b64` | string | **yes** | — | Invoice XML encoded as Base64 |
 | `response_type` | string | no | `base64` | `base64` — JSON with `pdf_b64`, `binary` — raw PDF |
 | `additional_data.nr_ksef` | string | no | — | KSeF number printed on the PDF |
+| `additional_data.ac_date` | string | no | — | Date the KSeF number was assigned, printed next to it |
 | `additional_data.qr_code` | string | no | — | QR code URL |
 | `additional_data.qr2_code` | string | no | — | Second QR code URL |
 | `additional_data.is_mobile` | bool | no | — | Mobile layout variant |
 | `additional_data.watermark` | string | no | — | Watermark text on every page (e.g. `KOPIA`, `ANULOWANA`) |
 | `additional_data.language` | string | no | `pl` | PDF label language: `pl` or `en` (case-insensitive). See note below. |
 
-> **Note:** English (`language: en`) is a **test feature**. Official English translations of KSeF invoice field labels are not available — the current EN translation was generated with GPT and is provided for testing purposes only.
+> **Note:** the Ministry publishes no official English wording for KSeF invoice field labels, so `language: en` uses this project's own translation, reviewed and corrected by a consultant. It is maintained in [`pdf-generator/i18n/en.json`](../pdf-generator/i18n/en.json) — see [Architecture](architecture.md#rebuilding-the-pdf-generator) before rebuilding the generator.
 
 `response_type`: `base64` (default) or `binary`
 
@@ -197,7 +206,7 @@ Generates or retrieves an active RSA keypair and self-signed certificate for a g
 
 ## `POST /consume`
 
-Secure encrypted tunnel. Accepts a CMS-wrapped payload, decrypts it, executes the inner request against a local endpoint (e.g. `/encrypt`), and returns an encrypted response.
+Secure encrypted tunnel. Accepts a CMS-wrapped payload, decrypts it, executes the inner request, and returns the result as plaintext or encrypted with the client's certificate.
 
 **Payload wrapping flow:**
 ```
@@ -219,6 +228,27 @@ Secure encrypted tunnel. Accepts a CMS-wrapped payload, decrypts it, executes th
 ```
 
 `reply_cert_pem_b64` is optional. When provided, the response is encrypted with the client's certificate.
+
+**Structure of the encrypted plaintext.** This is the JSON that `ciphertext_b64` must decrypt to — build it before encrypting:
+
+```json
+{
+  "target": "/encrypt",
+  "payload": {
+    "data_b64": "SGVsbG8gS1NlRg==",
+    "cert_b64": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t..."
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `target` | Operation to run. **`/encrypt` is currently the only supported value** — anything else fails with `Dispatch error: Unknown target: ...` |
+| `payload` | That operation's own fields. For `/encrypt`: `data_b64` and `cert_b64`, exactly as the plain endpoint takes them |
+
+The decrypted response is whatever that operation would have returned, e.g. `{"status":"ok","encrypted_b64":"..."}`.
+
+> The key transport algorithm inside the CMS envelope is RSAES-PKCS1-v1_5 (OpenSSL's default for `cms -encrypt`), not RSAES-OAEP. See [Architecture](architecture.md#cryptographic-specifications).
 
 **Response (no reply cert):**
 ```json

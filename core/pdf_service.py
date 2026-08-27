@@ -6,6 +6,24 @@ import subprocess
 SUPPORTED_LANGUAGES = {"pl", "en"}
 
 
+ERROR_MARKER = "__KSEF_PDF_ERROR__"
+
+
+def _extract_bridge_error(stderr: str | None) -> str:
+    """
+    Pull the bridge's own error out of stderr.
+
+    stderr also carries i18next debug output from the PDF module, so without the
+    marker the real cause ends up buried under unrelated log lines.
+    """
+    stderr_text = (stderr or "").strip()
+
+    if ERROR_MARKER in stderr_text:
+        return stderr_text.rsplit(ERROR_MARKER, 1)[1].strip() or "Unknown PDF generator error"
+
+    return stderr_text or "Unknown PDF generator error"
+
+
 def run_pdf_generator(xml_content: str, additional_data: dict, language: str = "pl") -> str:
     node_bin = os.getenv("KSEF_NODE_BIN", "node")
     bridge_path = os.getenv(
@@ -41,9 +59,7 @@ def run_pdf_generator(xml_content: str, additional_data: dict, language: str = "
         raise RuntimeError("PDF generator timeout") from exc
 
     if process.returncode != 0:
-        stderr_text = (process.stderr or "").strip()
-        error_message = stderr_text or "Unknown PDF generator error"
-        raise RuntimeError(f"PDF generator failed: {error_message}")
+        raise RuntimeError(f"PDF generator failed: {_extract_bridge_error(process.stderr)}")
 
     try:
         output_data = json.loads(process.stdout or "{}")
@@ -68,6 +84,12 @@ def normalize_pdf_additional_data(additional_data) -> dict:
         nr_ksef = additional_data.get("nrKSeF")
     if nr_ksef is not None:
         normalized["nrKSeF"] = str(nr_ksef)
+
+    ac_date = additional_data.get("ac_date")
+    if ac_date is None:
+        ac_date = additional_data.get("acDate")
+    if ac_date is not None:
+        normalized["acDate"] = str(ac_date)
 
     qr_code = additional_data.get("qr_code")
     if qr_code is None:

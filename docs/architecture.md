@@ -29,7 +29,9 @@ Flask API Gateway (encrypt_service.py)
 ├── encrypt_service.py           # App factory, blueprint registration
 ├── swaggerapi.yaml              # OpenAPI definition
 ├── pdf_generator_bridge.mjs     # Node.js ESM bridge for PDF generation
-├── pdf-generator/dist/          # Built PDF visualizer (ksef-fe-invoice-converter.js)
+├── pdf-generator/
+│   ├── dist/                    # Built PDF visualizer (ksef-fe-invoice-converter.js)
+│   └── i18n/en.json             # Maintained EN translation, reapplied on every rebuild
 ├── core/
 │   ├── config.py                # Environment variable defaults
 │   ├── database.py              # SQLite connection + WAL init
@@ -46,13 +48,56 @@ Flask API Gateway (encrypt_service.py)
 │   ├── internal_keys.py         # POST /get_pub_cert
 │   └── consume.py               # POST /consume
 ├── tests/                       # pytest test suite
-├── Dockerfile
-├── docker-compose.yml           # Base compose config
-├── docker-compose.dev.yml       # Dev override (port 5001)
-├── docker-compose.prod.yml      # Prod override (port 5000)
-└── build-image.sh               # Build and export Docker image as tar
+├── docker/                      # Everything Docker-related
+│   ├── Dockerfile
+│   ├── Dockerfile.dockerignore  # Build-context excludes (paths relative to repo root)
+│   ├── docker-compose.yml       # Base compose config
+│   ├── docker-compose.dev.yml   # Dev override (port 5001)
+│   ├── docker-compose.prod.yml  # Prod override (port 5000)
+│   ├── docker-compose.ssl.yml   # Optional TLS proxy overlay (port 443)
+│   ├── build-image.sh           # Build and export Docker image as tar
+│   ├── certs/                   # Generated TLS material (not committed)
+│   └── proxy/                   # nginx TLS-termination image
+│       ├── Dockerfile
+│       ├── entrypoint.sh        # Reuse-or-generate certificate provisioning
+│       └── nginx.conf.template
+└── setup-ssl.sh                 # Nginx + Let's Encrypt (Docker or systemd)
 
 ```
+
+## Rebuilding the PDF Generator
+
+`pdf-generator/dist/` is a build of [CIRFMF/ksef-pdf-generator](https://github.com/CIRFMF/ksef-pdf-generator),
+vendored so the service needs no Node toolchain at runtime. The source clone is **not** part
+of this repository.
+
+**Upstream ships `src/lib-public/i18n/lang/en.json` filled with `ExampleText` placeholders** —
+there is no official English wording for KSeF field labels. This project maintains its own
+translation in `pdf-generator/i18n/en.json`, reviewed and corrected by a consultant. Building
+from a clean upstream checkout without reapplying it produces PDFs whose every English label
+reads `ExampleText`, and nothing fails loudly when that happens.
+
+```bash
+git clone https://github.com/CIRFMF/ksef-pdf-generator
+cd ksef-pdf-generator && git checkout <tag>
+
+# Reapply the maintained EN translation — do not skip this.
+cp ../pdf-generator/i18n/en.json src/lib-public/i18n/lang/en.json
+
+npm ci && npm run build
+cp -r dist ../pdf-generator/dist
+```
+
+Verify before committing the result:
+
+```bash
+# Must print 0. Anything else means the translation was not applied.
+grep -c ExampleText pdf-generator/dist/ksef-fe-invoice-converter.js
+```
+
+If upstream adds translation keys, reconcile them into `pdf-generator/i18n/en.json` rather
+than taking the upstream file: a key missing from our file makes i18next fall back to
+printing the key itself.
 
 ## Cryptographic Specifications
 
@@ -61,9 +106,15 @@ Flask API Gateway (encrypt_service.py)
 | RSA encryption (`/encrypt`) | RSAES-OAEP, MGF1 + SHA-256 |
 | XML signing (`/sign_xml`) | XAdES enveloped, RSA-SHA256 or ECDSA-SHA256 (P-256) |
 | Link signing (`/sign_link`) | RSA-PSS or ECDSA P-256, Base64URL output |
-| Tunnel key wrapping (`/consume`) | CMS EnvelopedData (RFC 5652), RSA-OAEP |
+| Tunnel key wrapping (`/consume`) | CMS EnvelopedData (RFC 5652), RSAES-PKCS1-v1_5 [^cms] |
 | Tunnel payload (`/consume`) | AES-256-CBC, PKCS7 padding |
 | Internal keypairs (`/get_pub_cert`) | RSA-2048, self-signed X.509, TTL-based expiry |
+
+[^cms]: `cms_encrypt_with_cert` shells out to `openssl cms -encrypt` without
+`-keyopt rsa_padding_mode:oaep`, so the key transport algorithm in the envelope is
+OpenSSL's default `rsaEncryption` (RSAES-PKCS1-v1_5), not OAEP. `/encrypt` is a separate
+path and does use RSAES-OAEP. Changing the CMS padding would break compatibility with
+existing SAP clients, so it is a deliberate interop constraint rather than an oversight.
 
 ## Secure Tunnel Flow (`/consume`)
 

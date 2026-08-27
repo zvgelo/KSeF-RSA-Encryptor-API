@@ -1,4 +1,4 @@
-declare const _default: {
+{
   "const": {
     "countries": {
       "AD": "Andorra",
@@ -1065,6 +1065,4 @@ declare const _default: {
       "discounts": "Discounts"
     }
   }
-};
-
-export default _default;
+}

@@ -85,10 +85,10 @@ Use `-p` (project name) so each stack gets its own network and container namespa
 
 ```bash
 # Production
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
 
 # Development
-docker compose -p ksef-dev -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -p ksef-dev -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
 ```
 
 Verify both are running:
@@ -114,8 +114,8 @@ docker build -t ksef-integration-api:latest .
 
 Or let compose build on the fly with `--build`:
 ```bash
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-docker compose -p ksef-dev  -f docker-compose.yml -f docker-compose.dev.yml  up -d --build
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --build
+docker compose -p ksef-dev  -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --build
 ```
 
 ### Stop
@@ -147,13 +147,128 @@ Build and export image as a tar archive:
 
 ```bash
 # produces ksef-integration-api_stable.tar
-./build-image.sh stable
+./docker/build-image.sh stable
 ```
 
 Transfer to target machine and load:
 
 ```bash
 docker load -i ksef-integration-api_stable.tar
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
 ```
 
+
+---
+
+## TLS (production)
+
+An optional third container terminates TLS in front of the API. It is an
+**additive overlay** — it changes nothing in the existing compose files, and the
+application container keeps publishing port 5000 on the host exactly as before.
+
+```bash
+docker compose -p ksef-prod \
+  -f docker/docker-compose.yml \
+  -f docker/docker-compose.prod.yml \
+  -f docker/docker-compose.ssl.yml up -d
+```
+
+This adds `ksef-ssl-proxy` (nginx-alpine, ~85 MB) listening on 443, with 80
+redirecting to it. Traffic is forwarded to `ksef-encryptor:5000` over the
+compose network.
+
+### Certificates
+
+The proxy provisions its own material on first start and writes it to
+`docker/certs/` on the host, so it survives redeploys and can be collected:
+
+```
+docker/certs/
+├── ca.crt        <- give this to clients so they trust the service
+├── ca.key        <- 0600, keep on the server
+├── server.crt    <- issued by the CA above, SAN covers domain + IPs
+└── server.key    <- 0600
+```
+
+On every subsequent start an existing `server.crt`/`server.key` pair is
+**reused**, never regenerated. To use a certificate from your own PKI instead,
+place it in that directory before the first start — the proxy detects it, leaves
+it alone, and does not create a CA. An expired certificate is renewed
+automatically only when the local CA issued it; anything else is left untouched
+with a warning, so a bring-your-own certificate is never silently replaced.
+
+A certificate and key that do not belong to the same pair abort startup with an
+explicit error rather than letting nginx fail obscurely.
+
+### Configuration
+
+Set these before `up`, e.g. in a `.env` file next to the compose files:
+
+| Variable | Default | Description |
+|---|---|---|
+| `KSEF_SSL_DOMAIN` | `localhost` | Certificate CN and nginx `server_name`. Must match the name clients use. |
+| `KSEF_SSL_DNS` | — | Extra DNS names for the SAN, comma-separated |
+| `KSEF_SSL_IPS` | `127.0.0.1` | IP addresses for the SAN, comma-separated |
+| `KSEF_SSL_PROTOCOLS` | `TLSv1.2 TLSv1.3` | Set to `TLSv1.2` to pin that version exclusively |
+| `KSEF_SSL_CIPHERS` | see below | TLS 1.2 cipher list; empty means the built-in default |
+| `KSEF_SSL_MAX_BODY` | `15m` | Request body limit |
+| `KSEF_SSL_CERT_DAYS` | `825` | Validity of a generated server certificate |
+
+The certificate is bound to `KSEF_SSL_DOMAIN` and the SAN entries, so set them
+before the first start:
+
+```bash
+KSEF_SSL_DOMAIN=api.example.com KSEF_SSL_IPS=10.0.0.5,127.0.0.1 \
+  docker compose -p ksef-prod \
+    -f docker/docker-compose.yml \
+    -f docker/docker-compose.prod.yml \
+    -f docker/docker-compose.ssl.yml up -d
+```
+
+Changing the domain later requires deleting `docker/certs/server.crt` and
+`server.key` so a new pair is issued; keeping `ca.crt` and `ca.key` means
+clients that already trust the CA need no update.
+
+### TLS versions and ciphers
+
+TLS 1.2 is the primary target. TLS 1.3 stays enabled because a 1.2-only client
+simply negotiates down; TLS 1.0 and 1.1 are refused. `ssl_ciphers` applies to
+**TLS 1.2 and below only** — TLS 1.3 suites are fixed by OpenSSL and cannot be
+configured there. The default list is ECDHE-only (forward secrecy throughout)
+and ends with CBC-SHA suites for older Java/SAP stacks that offer no AEAD suite:
+
+```
+ECDHE-ECDSA-AES256-GCM-SHA384   ECDHE-RSA-AES256-GCM-SHA384
+ECDHE-ECDSA-AES128-GCM-SHA256   ECDHE-RSA-AES128-GCM-SHA256
+ECDHE-ECDSA-CHACHA20-POLY1305   ECDHE-RSA-CHACHA20-POLY1305
+ECDHE-ECDSA-AES256-SHA384       ECDHE-RSA-AES256-SHA384
+ECDHE-ECDSA-AES128-SHA256       ECDHE-RSA-AES128-SHA256
+```
+
+DHE suites are deliberately absent: nginx disables them unless `ssl_dhparam` is
+configured, so listing them would advertise something the server never offers.
+A client that genuinely needs DHE requires generated DH parameters and an
+`ssl_dhparam` directive in `docker/proxy/nginx.conf.template`.
+
+Verify what a client actually negotiates:
+
+```bash
+openssl s_client -connect api.example.com:443 -tls1_2 -CAfile docker/certs/ca.crt
+```
+
+### Distributing the CA
+
+Clients must trust `docker/certs/ca.crt`. For example:
+
+```bash
+# Linux (Debian/Ubuntu)
+sudo cp ca.crt /usr/local/share/ca-certificates/ksef-api.crt && sudo update-ca-certificates
+
+# curl, ad hoc
+curl --cacert ca.crt https://api.example.com/health
+```
+
+> This is separate from `setup-ssl.sh`, which puts Nginx and a Let's Encrypt
+> certificate on the **host** and needs a public domain. Use that when the
+> service is publicly reachable and clients should not install anything; use the
+> proxy container for internal deployments.

@@ -1,0 +1,59 @@
+# TLS termination for production — an additive overlay.
+#
+# Stacks on top of the existing files; it changes nothing in them, and the
+# application container keeps publishing its own port on the host:
+#
+#   docker compose -p ksef-prod \
+#     -f docker/docker-compose.yml \
+#     -f docker/docker-compose.prod.yml \
+#     -f docker/docker-compose.ssl.yml up -d
+#
+# Certificates are bind-mounted from docker/certs/ on the host. The proxy
+# generates a self-signed CA and server certificate on first start and reuses
+# them afterwards; drop your own server.crt/server.key in there to use those
+# instead. Clients must trust docker/certs/ca.crt.
+
+services:
+  ksef-ssl-proxy:
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    container_name: ksef-ssl-proxy
+    image: ksef-ssl-proxy:stable
+    depends_on:
+      ksef-encryptor:
+        condition: service_healthy
+    ports:
+      - "443:443"
+      - "80:80"
+    environment:
+      # Must match the name clients use, otherwise they get a hostname mismatch.
+      KSEF_SSL_DOMAIN: "${KSEF_SSL_DOMAIN:-localhost}"
+      # Extra Subject Alternative Names, comma-separated.
+      KSEF_SSL_DNS: "${KSEF_SSL_DNS:-}"
+      KSEF_SSL_IPS: "${KSEF_SSL_IPS:-127.0.0.1}"
+      KSEF_SSL_UPSTREAM: "ksef-encryptor:5000"
+      KSEF_SSL_MAX_BODY: "${KSEF_SSL_MAX_BODY:-15m}"
+      # TLS 1.2 is the primary target. Set to "TLSv1.2" to pin it exclusively.
+      KSEF_SSL_PROTOCOLS: "${KSEF_SSL_PROTOCOLS:-TLSv1.2 TLSv1.3}"
+      # Applies to TLS 1.2 and below only; leave empty for the built-in default.
+      KSEF_SSL_CIPHERS: "${KSEF_SSL_CIPHERS:-}"
+      KSEF_SSL_READ_TIMEOUT: "120s"
+      KSEF_SSL_CERT_DAYS: "${KSEF_SSL_CERT_DAYS:-825}"
+    volumes:
+      - ./certs:/etc/nginx/certs
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsk",
+          "--resolve",
+          "${KSEF_SSL_DOMAIN:-localhost}:443:127.0.0.1",
+          "https://${KSEF_SSL_DOMAIN:-localhost}/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped

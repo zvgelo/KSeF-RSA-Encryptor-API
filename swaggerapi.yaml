@@ -12,7 +12,7 @@ info:
     6) **/consume** – Secure encrypted RPC tunnel (CMS + AES-256-CBC).
 
     All binary inputs and outputs are passed as Base64-encoded strings in JSON.
-  version: "1.3.1"
+  version: "1.3.2"
   contact:
     name: KBJ DRA
     url: https://github.com/tech-dra-kbj
@@ -153,8 +153,15 @@ paths:
                 example: "LS0tLS1CRUdJTiBFTkNSWVBURUQgUFJJVkFURSBLRVktLS0tLQ=="
               key_password_b64:
                 type: string
-                description: Private key password – Base64(UTF-8). Optional.
+                description: Private key password – Base64(UTF-8). Optional. Takes precedence over key_password.
                 example: "emFxMUBXU1hjZGUzJFJGVg=="
+              key_password:
+                type: string
+                description: >
+                  Private key password as plain UTF-8 text. Optional, and only accepted by this
+                  endpoint — /sign_xml takes key_password_b64 exclusively. Used only when
+                  key_password_b64 is absent; prefer the Base64 form.
+                example: "zaq1@WSXcde3$RFV"
               alg:
                 type: string
                 description: Signature algorithm.
@@ -198,14 +205,6 @@ paths:
               error:
                 type: string
                 example: "Cannot load private key PEM: ..."
-        500:
-          description: Internal server error
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: "Unexpected error: ..."
 
   /sign_xml:
     post:
@@ -282,14 +281,6 @@ paths:
               error:
                 type: string
                 example: "Cannot load private key PEM (key_pem_b64): ..."
-        500:
-          description: Internal server error
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: "Unexpected error: ..."
 
   /generatePDF:
     post:
@@ -302,9 +293,11 @@ paths:
         - Default response: JSON with `pdf_b64`
         - For `response_type = binary`: returns raw `application/pdf`
 
-        > **Note:** English (`language: en`) is a test feature. Official English translations
-        > of KSeF invoice field labels are not available — the current EN translation was
-        > generated with GPT and is provided for testing purposes only.
+        > **Note:** the Ministry publishes no official English wording for KSeF invoice
+        > field labels, so `language: en` uses this project's own translation, reviewed and
+        > corrected by a consultant. It is maintained in `pdf-generator/i18n/en.json` and
+        > must be reapplied whenever the PDF generator is rebuilt — upstream ships the file
+        > filled with `ExampleText` placeholders.
 
         Example (curl + jq — recommended):
 
@@ -364,6 +357,10 @@ paths:
                     type: string
                     description: KSeF invoice number printed on the PDF.
                     example: "20260101-1234567890-ABCDEF1234567890"
+                  ac_date:
+                    type: string
+                    description: Date the KSeF number was assigned, printed next to it.
+                    example: "2026-01-01T12:00:00Z"
                   qr_code:
                     type: string
                     description: QR code URL.
@@ -440,7 +437,7 @@ paths:
                 example: "KSeF Integration API"
               version:
                 type: string
-                example: "1.3.1"
+                example: "1.3.2"
 
   /get_pub_cert:
     post:
@@ -491,6 +488,14 @@ paths:
                 example: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t..."
         400:
           description: Invalid or missing SID
+        500:
+          description: Internal server error
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Unexpected error: ..."
 
   /consume:
     post:
@@ -498,8 +503,8 @@ paths:
       description: |
         Accepts an encrypted payload wrapped in a CMS EnvelopedData structure (RFC 5652).
         Unwraps the AES key using the internal private key for the given SID,
-        decrypts the payload with AES-256-CBC, dispatches the inner request to a local endpoint
-        (e.g. `/encrypt`), and returns the result as plaintext or encrypted with the client's certificate.
+        decrypts the payload with AES-256-CBC, dispatches the inner request, and returns the
+        result as plaintext or encrypted with the client's certificate.
 
         **Payload wrapping flow:**
         ```
@@ -507,6 +512,28 @@ paths:
           ├── AES key wrapped in CMS EnvelopedData using the SID certificate
           └── enc_key_b64 + iv_b64 + ciphertext_b64 sent in request
         ```
+
+        **Structure of the encrypted plaintext.** Build this JSON object before encrypting;
+        it is what `ciphertext_b64` must decrypt to:
+        ```json
+        {
+          "target": "/encrypt",
+          "payload": {
+            "data_b64": "<Base64 of the data to encrypt>",
+            "cert_b64": "<KSeF certificate, Base64 DER or PEM>"
+          }
+        }
+        ```
+        `target` selects the operation to run. **`/encrypt` is currently the only supported
+        value** — anything else fails with `Dispatch error: Unknown target: ...`. `payload`
+        carries that operation's own fields; for `/encrypt` these are the same `data_b64` and
+        `cert_b64` the plain endpoint takes.
+
+        The decrypted response is the JSON that operation would have returned, for example
+        `{"status":"ok","encrypted_b64":"..."}`.
+
+        Note: the key transport algorithm inside the CMS envelope is RSAES-PKCS1-v1_5,
+        OpenSSL's default for `cms -encrypt`, not RSAES-OAEP.
       tags:
         - Key Management
       parameters:
@@ -569,6 +596,14 @@ paths:
                     type: string
         400:
           description: Decryption or dispatch error
+        500:
+          description: Internal server error
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Unexpected error: ..."
 
   /:
     get:
@@ -585,7 +620,7 @@ paths:
             properties:
               service:
                 type: string
-                example: "KSeF Integration API 1.3.1"
+                example: "KSeF Integration API 1.3.2"
               docs:
                 type: string
                 example: "/apidocs"

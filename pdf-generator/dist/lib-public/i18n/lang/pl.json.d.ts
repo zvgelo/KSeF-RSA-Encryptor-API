@@ -358,7 +358,7 @@ declare const _default: {
       "originalEntity": "Podmiot pierwotny - w przypadku gdy na fakturze występują dane podmiotu będącego w stosunku do podatnika podmiotem przejętym lub przekształconym, który dokonywał dostawy lub świadczył usługę. Z wyłączeniem przypadków, o których mowa w art. 106j ust.2 pkt 3 ustawy, gdy dane te wykazywane są w części Podmiot1K",
       "paymentEntity": "Dokonujący płatności - w przypadku gdy na fakturze występują dane podmiotu regulującego zobowiązanie w miejsce nabywcy",
       "recipientInternalUnit": "Odbiorca - w przypadku gdy na fakturze występują dane jednostek wewnętrznych, oddziałów, wyodrębnionych w ramach nabywcy, które same nie stanowią nabywcy w rozumieniu ustawy",
-      "taxRate65": "6.5%",
+      "taxRate65": "6,5%",
       "taxRate7": "7%",
       "vatGroupMemberIssuer": "Członek grupy VAT - wystawca",
       "vatGroupMemberRecipient": "Członek grupy VAT - odbiorca"
@@ -423,7 +423,8 @@ declare const _default: {
       "partialPayMechanism": "Mechanizm podzielonej płatności",
       "reverseTax": "Odwrotne obciążenie",
       "selfInvoice": "Samofakturowanie",
-      "threePartsSimplerMethod": "Procedura trójstronna uproszczona",
+      "simplifiedWeInfoiceLabel":"VAT: ",
+      "simplifiedWeInfoice": "Faktura WE uproszczona na mocy art. 135-138 ustawy o pt/artykułu 141 dyrektywy 2006/112/WE. Podatek z tytułu dokonanej dostawy zostanie rozliczony przez ostatniego w kolejności podatnika podatku od wartości dodanej",
       "transportApprovalDate": "Data dopuszczenia nowego środka transportu do użytku",
       "transportBrand": "Marka nowego środka transportu",
       "transportColor": "Kolor nowego środka transportu",
@@ -512,7 +513,27 @@ declare const _default: {
       "productName": "Nazwa towaru lub usługi",
       "quantity": "Ilość",
       "totalValue": "Wartość rabatu ogółem: ",
-      "unit": "Miara"
+      "unit": "Miara",
+      "cn": "CN",
+      "currencyRate": "Kurs waluty",
+      "exciseTaxAmount": "Kwota podatku akcyzowego",
+      "gtin": "GTIN",
+      "gtu": "GTU",
+      "index": "Indeks",
+      "netSalesValue": "Wartość sprzedaży netto",
+      "netUnitPrice": "Cena jedn. netto",
+      "grossUnitPrice": "Cena jedn. brutto",
+      "ossTaxRate": "Stawka podatku OSS",
+      "pkob": "PKOB",
+      "pkwiu": "PKWiU",
+      "procedure": "Procedura",
+      "productMarker": "Znacznik dla towaru lub usługi z zał. nr 15 do ustawy",
+      "taxAmount": "Kwota podatku",
+      "taxRate": "Stawka podatku",
+      "uuid": "UU_ID",
+      "discount": "Rabat",
+      "grossSalesValue": "Wartość sprzedaży brutto",
+      "getOrMakeDate": "Data dostawy / wykonania"
     },
     "footer": {
       "generatedIn": "Wytworzona w: ",
@@ -530,7 +551,8 @@ declare const _default: {
       "correctionCollective": "Faktura korygująca zbiorcza (rabat)",
       "correctionSettlement": "Faktura korygująca rozliczeniową",
       "invoiceNumberLabel": "Numer Faktury:",
-      "ksefNumberLabel": "Numer KSEF:",
+      "acquisitionDate": "Data nadania numeru KSeF:",
+      "ksefNumberLabel": "Numer KSeF:",
       "ksefPart1": "Krajowy System ",
       "ksefPart2": "e",
       "ksefPart3": "-Faktur",
@@ -573,6 +595,8 @@ declare const _default: {
       "taxRate": "Stawka podatku",
       "totalAmountDue": "Kwota należności ogółem: ",
       "uniqueRowNumber": "Unikalny numer wiersza",
+      "uuid": "UU_ID",
+      "uuidz": "UU_IDZ",
       "unit": "Miara"
     },
     "payment": {
@@ -679,6 +703,8 @@ declare const _default: {
       "uniqueRowNumber": "Unikalny numer wiersza",
       "unit": "Miara",
       "unitPrice": "Cena jedn.",
+      "uuid": "UU_ID",
+      "uuidz": "UU_IDZ",
       "valueZZP": "Wartość z ZZP",
       "vatSalesValue": "Wartość sprzedaży vat",
       "wageZZP": "Stawka ZZP"
@@ -896,6 +922,147 @@ declare const _default: {
     "wz": {
       "documentsHeader": "Numery dokumentów magazynowych WZ",
       "number": "Numer WZ"
+    }
+  },
+  "pef": {
+    "invoiceHeader": {
+      "invoice": "FAKTURA",
+      "correctiveInvoice": "FAKTURA KORYGUJĄCA",
+      "documentCurrencyCode": "Waluta faktury",
+      "payableAmount": "Kwota do zapłaty",
+      "dueDate": "Termin płatności",
+      "buyerReference": "Znak kupującego",
+      "issueDate": "Data wystawienia faktury",
+      "taxPointDate": "Data opodatkowania",
+      "startDate": "Data początkowa okresu faktury",
+      "endDate": "Data końcowa okresu faktury",
+      "contractDocumentReferenceId": "Numer kontraktu",
+      "orderReferenceId": "Numer zamówienia wg kupującego",
+      "orderReferenceSalesOrderId": "Numer awiza wysyłki",
+      "receiptDocumentReferenceId": "Numer potwierdzenia odbioru",
+      "note": "Uwagi ogólne do dokumentu"
+    },
+    "customer": {
+      "header": "Odbiorca"
+    },
+    "supplier": {
+      "header": "Sprzedawca"
+    },
+    "contact": {
+      "nameAndSurname": "Imię i nazwisko",
+      "phoneNumber": "Numer telefonu",
+      "mail": "E-mail",
+      "pefId": "Elektroniczny identyfikator PEF",
+      "title": "Kontakt"
+    },
+    "postal": {
+      "address": "Adres"
+    },
+    "registration": {
+      "title": "Dane w rejestrze podmiotów",
+      "id": "Identyfikator rejestrowy",
+      "identifier": "Identyfikator {{id}}"
+    },
+    "taxRepresentative": {
+      "header": "Przedstawiciel podatkowy sprzedawcy"
+    },
+    "delivery": {
+      "header": "Odbiorca",
+      "deliveryLocationID": "Identyfikator",
+      "actualDeliveryDate": "Rzeczywista data dostawy/Data sprzedaży"
+    },
+    "payeeparty": {
+      "header": "Odbiorca płatności",
+      "companyID": "Identyfikator rejestracji prawnej",
+      "partyIdentificationID": "Identyfikator"
+    },
+    "invoiceDescrption": {
+      "invoiceNumber": "Numer faktury poprzedzającej",
+      "dated": " z dn. ",
+      "referenceNumber": "Numer ogłoszenia o przetargu lub jego części",
+      "projectNumber": "Numer projektu",
+      "additionalDocuments": "Dokumenty dodatkowe do faktury",
+      "buyerCostReference": "Znak stanowiska kosztów u nabywcy",
+      "supportingDocumentReference": "Znak dokumentu dodatkowego",
+      "link": "Link do dokumentu dodatkowego: ",
+      "documentDescription": "Opis dokumentu dodatkowego: ",
+      "fileType": "Typ pliku: ",
+      "fileName": "Nazwa pliku: "
+    },
+    "stepper": {
+      "messageVersion": "Wersja komunikatu",
+      "descriptionVersion": "Ten dokument został wygenerowany na podstawie wizualizacji PEF.v_1.4.37.02",
+      "generatorVersion": "(ksef-pdf-generator - wersja {{version}})"
+    },
+    "taxtotal": {
+      "taxAmountId": "Suma",
+      "taxSubtotalHeader": "Rozliczenie VAT wg stawek",
+      "taxCategory": "Rodzaj i stawka podatku",
+      "taxExemptionReason": "Przyczyna zwolnienia z VAT",
+      "taxableAmount": "Kwota podstawy opodatkowania w kategorii VAT",
+      "taxAmount": "Kwota podatku w kategorii VAT"
+    },
+    "payment": {
+      "title": "Instrukcje płatności",
+      "paymentTerms": "Warunki płatności",
+      "paymentTypeCode": "Kod typu płatności",
+      "paymentIdentification": "Identyfikacja płatności",
+      "paymentServiceProviderId": "Identyfikator dostawcy usługi płatniczej",
+      "paymentRecipientAccountNumber": "Numer konta odbioru płatności",
+      "paymentRecipientAccountName": "Nazwa konta odbioru płatności",
+      "cardNetworkId": "Identyfikator sieci obsługi karty",
+      "paymentCardAccountNumber": "Numer konta karty płatniczej",
+      "paymentCardHolderName": "Nazwa właściciela karty płatniczej",
+      "debitedAccountId": "Identyfikator obciążanego konta",
+      "directDebitId": "Identyfikator polecenia zapłaty"
+    },
+    "legalMonetaryTotal": {
+      "taxExclusiveAmount": "Suma faktury bez podatku VAT",
+      "taxInclusiveAmount": "Całkowita kwota faktury z podatkiem VAT",
+      "prepaidAmount": "Kwota przedpłacona",
+      "rndPrepaidAmount": "Kwota zaokrągleń",
+      "payableAmount": "Kwota do zapłaty"
+    },
+    "allowancecharge": {
+      "allowanceHeader": "Upusty na poziomie dokumentu",
+      "chargeHeader": "Obciążenia na poziomie dokumentu",
+      "allowanceReason": "Przyczyna upustu",
+      "chargeReason": "Przyczyna obciążenia",
+      "allowanceReasonCode": "Kod przyczyny upustu",
+      "chargeReasonCode": "Kod przyczyny obciążenia",
+      "baseAmount": "Podstawa obliczenia",
+      "allowanceAmount": "Kwota upustu",
+      "chargeAmount": "Kwota obciążenia",
+      "taxCategory": "Rodzaj i stawka podatku",
+      "totalAmount": "Suma"
+    },
+    "invoiceLine": {
+      "title": "Pozycje faktury",
+      "lineNo": "L.p.",
+      "name": "Nazwa",
+      "quantityUom": "Ilość JM",
+      "netPrice": "Cena netto",
+      "taxTypeRate": "Rodzaj i stawka podatku",
+      "chargesDiscounts": "Obciążenia, upusty",
+      "netAmount": "Kwota netto",
+      "description": "Opis",
+      "standardId": "Identyfikator standardowy",
+      "classificationId": "Identyfikator klasyfikacji",
+      "sellerId": "Identyfikator wg sprzedającego",
+      "additionalAttributes": "Dodatkowe właściwości/parametry",
+      "note": "Uwaga",
+      "buyerItemId": "Identyfikator pozycji wg kupującego",
+      "buyerCostCenterCode": "Znak stanowiska kosztów u nabywcy",
+      "billingPeriod": "Okres fakturowania dla pozycji faktury",
+      "periodStartDate": "Data początkowa okresu",
+      "periodEndDate": "Data końcowa okresu",
+      "netPriceDiscount": "Rabat od ceny netto",
+      "grossPrice": "Cena brutto pozycji",
+      "originCountry": "Kraj pochodzenia",
+      "purchaseOrderItemId": "Identyfikator pozycji powiązanego zamówienia zakupu",
+      "invoiceItemId": "Identyfikator przedmiotu fakturowania w pozycji faktury",
+      "charges": "Obciążenia",
+      "discounts": "Upusty"
     }
   }
 }

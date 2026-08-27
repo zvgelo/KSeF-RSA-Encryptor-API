@@ -20,12 +20,12 @@ git clone https://github.com/tech-dra-kbj/KSeF-RSA-Encryptor-API.git
 cd KSeF-RSA-Encryptor-API
 
 # Build both image tags
-./build-image.sh stable
-./build-image.sh latest
+./docker/build-image.sh stable
+./docker/build-image.sh latest
 
 # Start both services
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d
-docker compose -p ksef-dev  -f docker-compose.yml -f docker-compose.dev.yml  up -d
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
+docker compose -p ksef-dev  -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
 ```
 
 ### Option B — without repository access (image as tar archive)
@@ -36,8 +36,8 @@ Deliver both tar files to the target machine, then:
 docker load -i ksef-integration-api_stable.tar
 docker load -i ksef-integration-api_latest.tar
 
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d
-docker compose -p ksef-dev  -f docker-compose.yml -f docker-compose.dev.yml  up -d
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
+docker compose -p ksef-dev  -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
 ```
 
 ---
@@ -61,7 +61,7 @@ curl http://localhost:5001/health
 
 Expected response (both):
 ```json
-{"status":"ok","service":"KSeF Integration API","version":"1.3.0"}
+{"status":"ok","service":"KSeF Integration API","version":"1.3.2"}
 ```
 
 ---
@@ -73,11 +73,11 @@ Expected response (both):
 ```bash
 git pull
 
-./build-image.sh stable
-./build-image.sh latest
+./docker/build-image.sh stable
+./docker/build-image.sh latest
 
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps ksef-encryptor
-docker compose -p ksef-dev  -f docker-compose.yml -f docker-compose.dev.yml  up -d --no-deps ksef-encryptor
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps ksef-encryptor
+docker compose -p ksef-dev  -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --no-deps ksef-encryptor
 ```
 
 `--no-deps` restarts only the application container without touching other services.
@@ -86,16 +86,16 @@ docker compose -p ksef-dev  -f docker-compose.yml -f docker-compose.dev.yml  up 
 
 ```bash
 # On the build machine
-./build-image.sh stable
-./build-image.sh latest
+./docker/build-image.sh stable
+./docker/build-image.sh latest
 # Transfer both tar files to the server
 
 # On the server
 docker load -i ksef-integration-api_stable.tar
 docker load -i ksef-integration-api_latest.tar
 
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps ksef-encryptor
-docker compose -p ksef-dev  -f docker-compose.yml -f docker-compose.dev.yml  up -d --no-deps ksef-encryptor
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps ksef-encryptor
+docker compose -p ksef-dev  -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --no-deps ksef-encryptor
 ```
 
 ---
@@ -140,8 +140,8 @@ tail -f /var/log/encrypt_service.log
 docker load -i ksef-integration-api_stable_prev.tar
 docker load -i ksef-integration-api_latest_prev.tar
 
-docker compose -p ksef-prod -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps ksef-encryptor
-docker compose -p ksef-dev  -f docker-compose.yml -f docker-compose.dev.yml  up -d --no-deps ksef-encryptor
+docker compose -p ksef-prod -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps ksef-encryptor
+docker compose -p ksef-dev  -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --no-deps ksef-encryptor
 ```
 
 **systemd:**

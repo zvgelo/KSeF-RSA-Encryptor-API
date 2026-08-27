@@ -1,8 +1,15 @@
+# Project name is pinned so the stack keeps one identity no matter which
+# directory compose is invoked from. Override with `-p` when running several
+# environments side by side (see docs/deployment.md).
+name: ksef-integration-api
+
 services:
   ksef-encryptor:
     build:
-      context: .
-      dockerfile: Dockerfile
+      # Build context is the repository root; paths inside the Dockerfile are
+      # relative to it. Compose resolves this against THIS file's directory.
+      context: ..
+      dockerfile: docker/Dockerfile
     environment:
       PORT: "5000"
       WORKERS: "3"
